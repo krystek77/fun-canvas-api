@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pong Game</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <script>
+      let canvas = null;
+      let ctx = null;
+      let xCenter = 0;
+      let yCenter = 0;
+      let player = null;
+      let aiPlayer = null;
+      let ball = null;
+      let gameOver = false;
+      let isRunning = false;
+      let targetForBall = null;
+      let delayTime = null;
+      let timerID = null;
+      //speeds per seconds
+      const SPEED_PLAYER_PER_SECONDS = 200;
+      const SPEED_BALL_X_PER_SECONDS = 100;
+      const SPEED_BALL_Y_PER_SECONDS = 100;
+      const FPS = 30;
+      const SCORES_TO_WIN = 3;
+      let opacity = 1;
+
+      const DIRECTIONS = {
+        STOP: 0,
+        LEFT: 1,
+        UP: 2,
+        RIGHT: 3,
+        DOWN: 4,
+      };
+      class Player {
+        constructor(side, speed) {
+          this.width = 20;
+          this.height = 120;
+          this.position = {
+            x: side === 'LEFT' ? 150 : canvas.width - (150 + this.width),
+            y: Math.floor((canvas.height - this.height) / 2),
+          };
+          this.moveY = DIRECTIONS.STOP;
+          this.speed = speed / FPS;
+          this.scores = 0;
+        }
+        draw() {
+          ctx.fillStyle = 'white';
+          ctx.fillRect(
+            this.position.x,
+            this.position.y,
+            this.width,
+            this.height
+          );
+        }
+      }
+      class Ball {
+        constructor(newSpeed) {
+          this.speed = {
+            x: newSpeed.x / FPS,
+            y: newSpeed.y / FPS,
+          };
+          this.width = 20;
+          this.height = 20;
+          this.position = {
+            x: Math.floor((canvas.width - this.width) / 2),
+            y: Math.floor((canvas.height - this.height) / 2),
+          };
+          this.moveX = DIRECTIONS.STOP;
+          this.moveY = DIRECTIONS.STOP;
+        }
+        draw() {
+          ctx.fillStyle = 'white';
+          ctx.fillRect(
+            this.position.x,
+            this.position.y,
+            this.width,
+            this.height
+          );
+        }
+      }
+
+      const setWidth = () => window.innerWidth;
+      const setHeight = () => window.innerHeight;
+      const setCanvasDimensions = () => {
+        canvas.width = setWidth();
+        canvas.height = setHeight();
+      };
+      const setXCenter = () => Math.floor(canvas.width / 2);
+      const setYCenter = () => Math.floor(canvas.height / 2);
+      const setCanvasCenterPoint = () => {
+        xCenter = setXCenter();
+        yCenter = setYCenter();
+      };
+      const setCanvas = () => {
+        setCanvasDimensions();
+        setCanvasCenterPoint();
+      };
+      /**
+       * cupdate scores
+       */
+      function resetBall(winner, loser) {
+        winner.scores += 1;
+        ball = new Ball({ x: 100, y: 100 });
+        targetForBall = loser;
+        delayTime = new Date().getTime();
+      }
+      /**
+       * Adds delay to run game after scored point
+       */
+      function addDelay() {
+        return new Date().getTime() - delayTime >= 1000;
+      }
+      /**
+       * Updates canvas
+       */
+      function updateCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (!gameOver) {
+          if (ball.position.x < 0) {
+            resetBall(aiPlayer, player);
+          }
+          if (ball.position.x > canvas.width - ball.width) {
+            resetBall(player, aiPlayer);
+          }
+          if (ball.position.y < 0) {
+            ball.moveY = DIRECTIONS.DOWN;
+          }
+          if (ball.position.y > canvas.height - ball.height) {
+            ball.moveY = DIRECTIONS.UP;
+          }
+
+          if (player.move === DIRECTIONS.DOWN) {
+            player.position.y += player.speed;
+          } else if (player.move === DIRECTIONS.UP) {
+            player.position.y -= player.speed;
+          }
+          if (player.position.y < 0) {
+            player.position.y = 0;
+          } else if (player.position.y >= canvas.height - player.height) {
+            player.position.y = canvas.height - player.height;
+          }
+          if (addDelay() && targetForBall) {
+            ball.moveX =
+              targetForBall === player
+                ? (ball.moveX = DIRECTIONS.LEFT)
+                : DIRECTIONS.RIGHT;
+            ball.moveY = Math.floor(Math.random() * 2)
+              ? DIRECTIONS.UP
+              : DIRECTIONS.DOWN;
+            targetForBall = null;
+          }
+        }
+        if (ball.moveX === DIRECTIONS.LEFT) {
+          ball.position.x -= ball.speed.x;
+        } else if (ball.moveX === DIRECTIONS.RIGHT) {
+          ball.position.x += ball.speed.x;
+        }
+        if (ball.moveY === DIRECTIONS.UP) {
+          ball.position.y -= ball.speed.y;
+        } else if (ball.moveY === DIRECTIONS.DOWN) {
+          ball.position.y += ball.speed.y;
+        }
+
+        if (aiPlayer.position.y >= ball.position.y - aiPlayer.height / 2) {
+          aiPlayer.position.y -= aiPlayer.speed;
+        }
+        if (aiPlayer.position.y < ball.position.y - aiPlayer.height / 2) {
+          aiPlayer.position.y += aiPlayer.speed;
+        }
+        if (aiPlayer.position.y < 0) {
+          aiPlayer.position.y = 0;
+        } else if (aiPlayer.position.y >= canvas.height - aiPlayer.height) {
+          aiPlayer.position.y = canvas.height - aiPlayer.height;
+        }
+        //ckeck collision
+        if (
+          ball.position.x - ball.width <= player.position.x &&
+          ball.position.x >= player.position.x - player.width
+        ) {
+          if (
+            player.position.y + player.height >= ball.position.y &&
+            player.position.y <= ball.position.y + ball.height
+          ) {
+            ball.moveX = DIRECTIONS.RIGHT;
+          }
+        }
+        if (
+          ball.position.x - ball.width <= aiPlayer.position.x &&
+          ball.position.x >= aiPlayer.position.x - aiPlayer.width
+        ) {
+          if (
+            aiPlayer.position.y + aiPlayer.height >= ball.position.y &&
+            aiPlayer.position.y <= ball.position.y + ball.height
+          ) {
+            ball.moveX = DIRECTIONS.LEFT;
+          }
+        }
+        drawCanvas(); //draw canvas, players, ball, scores, game over, who wins
+      }
+      /**
+       * draws line
+       */
+      function drawLine(strokeColor, strokeWidth, startX, startY, endX, endY) {
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = strokeWidth;
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+      }
+      /**
+       * Draws text
+       */
+      function drawScores(textColor, player, x, y) {
+        ctx.fillStyle = textColor;
+        ctx.font = '80px Arial';
+        ctx.fillText(player.scores.toString(), x, y);
+      }
+      /**
+       * Draws canvas
+       */
+      function drawCanvas() {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // draw players
+        player.draw();
+        aiPlayer.draw();
+        // draw center, vertical line
+        const LINE_LENGTH = 20;
+        const EMPTY_LENGTH = 20;
+        for (
+          let index = 0;
+          index < canvas.height;
+          index += LINE_LENGTH + EMPTY_LENGTH
+        ) {
+          drawLine('white', 1, xCenter, index, xCenter, index + LINE_LENGTH);
+        }
+        //draw ball
+        ball.draw();
+        //draw scores
+        drawScores('white', player, xCenter - 300, 100);
+        drawScores('white', aiPlayer, xCenter + 300, 100);
+        //
+
+        ctx.textAlign = 'center';
+        ctx.font = '48px Arial';
+
+        if (player.scores === SCORES_TO_WIN) {
+          if (opacity > 0) {
+            opacity = opacity.toFixed(2);
+            opacity -= 1 / (FPS * 3); //fade in 3 seconds
+          }
+          ctx.fillStyle = `rgba(255,255,255,${opacity})`;
+          ctx.fillText('Game Over', xCenter, 100);
+          ctx.font = '32px Arial';
+          ctx.fillText('Winner is Player', xCenter, yCenter + 200);
+          if (opacity <= 0) {
+            clearInterval(timerID);
+            timerID = null;
+            gameOver = true;
+            isRunning = false;
+          }
+        }
+        if (aiPlayer.scores === SCORES_TO_WIN) {
+          if (opacity > 0) {
+            opacity = opacity.toFixed(2);
+            opacity -= 1 / (FPS * 3);
+          }
+          ctx.fillStyle = `rgba(255,255,255,${opacity})`;
+          ctx.fillText('Game Over', xCenter, 100);
+          ctx.font = '32px Arial';
+          ctx.fillText('Winner is AiPlayer', xCenter, yCenter + 200);
+          if (opacity <= 0) {
+            clearInterval(timerID);
+            timerID = null;
+            gameOver = true;
+            isRunning = false;
+          }
+        }
+      }
+
+
+
+      function movePlayer(event) {
+        event.preventDefault();
+        if (isRunning === false) {
+          isRunning = true;
+          timerID = setInterval(gameLoop, 1000 / FPS);
+        }
+        if (event.keyCode === 38 || event.keyCode === 87)
+          player.move = DIRECTIONS.UP;
+        if (event.keyCode === 40 || event.keyCode === 83)
+          player.move = DIRECTIONS.DOWN;
+      }
+
+      function setupCanvas() {
+        console.log('Setup Canvas');
+        canvas = document.getElementById('canvas');
+        setCanvas();
+        if (/** @type {CanvasRenderingContext2D}*/ canvas.getContext)
+          ctx = canvas.getContext('2d');
+
+        player = new Player('LEFT', SPEED_PLAYER_PER_SECONDS);
+        aiPlayer = new Player('RIGHT', SPEED_PLAYER_PER_SECONDS);
+
+        ball = new Ball({
+          x: SPEED_BALL_X_PER_SECONDS,
+          y: SPEED_BALL_Y_PER_SECONDS,
+        });
+        targetForBall = player;
+        delayTime = new Date().getTime();
+        document.addEventListener('keydown', movePlayer);
+        document.addEventListener('keyup', movePlayer);
+        drawCanvas();
+      }
+      function gameLoop() {
+        console.log('GAME LOOP');
+        updateCanvas();
+      }
+      // setInterval(gameLoop, 1000 / FPS);
+      window.addEventListener('DOMContentLoaded', setupCanvas);
+      window.addEventListener('resize', setupCanvas);
+    </script>
+  </body>
+</html>

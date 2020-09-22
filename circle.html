@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Exercise One</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100vw;
+        height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas" width="500" height="500"></canvas>
+    <script>
+      let canvas = null;
+      let ctx = null;
+      let X_CENTER = 0;
+      let Y_CENTER = 0;
+      let CANVAS_WIDTH = 0;
+      let CANVAS_HEIGHT = 0;
+      let radius = 200;
+      const mousePosition = { x: 0, y: 0 };
+
+      function getWidth() {
+        return window.innerWidth;
+      }
+      function getHeight() {
+        return window.innerHeight;
+      }
+      function setCanvasDimensions() {
+        canvas.width = getWidth();
+        canvas.height = getHeight();
+      }
+      function drawRectangle(
+        strokeColor,
+        strokeWidth,
+        startX,
+        startY,
+        width,
+        height
+      ) {
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = strokeWidth;
+        const minSize = Math.min(width, height);
+        const x = startX - minSize / 2;
+        const y = startY - minSize / 2;
+        ctx.strokeRect(x, y, minSize, minSize);
+      }
+      function drawCircle(
+        strokeColor,
+        strokeWidth,
+        centerX,
+        centerY,
+        radius,
+        angleStart,
+        angleEnd,
+        fillColor
+      ) {
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = strokeWidth;
+        if (fillColor) {
+          ctx.fillStyle = fillColor;
+        }
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, angleStart, angleEnd, false);
+        ctx.stroke();
+        if (fillColor) {
+          ctx.fill();
+        }
+      }
+      function drawLine(strokeColor, strokeWidth, startX, startY, endX, endY) {
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = strokeWidth;
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+      }
+      function drawText(text, startX, startY) {
+        ctx.fillStyle = 'violet';
+        ctx.font = '18px Arial';
+        ctx.fillText(text, startX, startY);
+      }
+      function drawCanvas() {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        //draw rectangle
+        drawRectangle(
+          'white',
+          2,
+          X_CENTER,
+          Y_CENTER,
+          CANVAS_WIDTH / 1.5,
+          CANVAS_HEIGHT / 1.5
+        );
+        //draw circle
+        drawCircle('red', 2, X_CENTER, Y_CENTER, radius, 0, 2 * Math.PI);
+        const LINE_LENGTH = 10;
+        const LINE_GAP = 20;
+        for (
+          let index = 0;
+          index < CANVAS_HEIGHT;
+          index += LINE_LENGTH + LINE_GAP
+        ) {
+          drawLine(
+            'white',
+            1,
+            CANVAS_WIDTH / 2,
+            index,
+            CANVAS_WIDTH / 2,
+            index + LINE_LENGTH
+          );
+        }
+        for (
+          let index = 0;
+          index < CANVAS_WIDTH;
+          index += LINE_LENGTH + LINE_GAP
+        ) {
+          drawLine(
+            'white',
+            1,
+            index,
+            CANVAS_HEIGHT / 2,
+            index + LINE_LENGTH,
+            CANVAS_HEIGHT / 2
+          );
+        }
+        //draw middle point
+        drawCircle(
+          'darkblue',
+          1,
+          X_CENTER,
+          Y_CENTER,
+          8,
+          0,
+          2 * Math.PI,
+          'blue'
+        );
+        drawText('O (0,0)', 10 + CANVAS_WIDTH / 2, 30 + CANVAS_HEIGHT / 2);
+      }
+      function setMousePosition(event) {
+        const { left, top } = canvas.getBoundingClientRect();
+        mousePosition.x = Math.floor(event.clientX - left);
+        mousePosition.y = Math.floor(event.clientY - top);
+        mousePosition.x -= Math.floor(CANVAS_WIDTH / 2);
+        mousePosition.y -= Math.floor(CANVAS_HEIGHT / 2);
+      }
+      function convertRadiansToDegrees(radians) {
+        if (radians < 0) {
+          return (360.0 + radians * (180 / Math.PI)).toFixed(2);
+        } else {
+          return (radians * (180 / Math.PI)).toFixed(2);
+        }
+      }
+      function convertDegreesToRadians(degrees) {
+        return (degrees * (Math.PI / 180)).toFixed(2);
+      }
+      function getAngleUsingXandY(x, y) {
+        const opposite = y;
+        const adjacent = x;
+        const angleInDegrees = convertRadiansToDegrees(
+          Math.atan2(opposite, adjacent)
+        );
+        return angleInDegrees;
+      }
+      function drawTriangle() {
+        const endX =
+          X_CENTER +
+          radius *
+            Math.cos(
+              convertDegreesToRadians(
+                getAngleUsingXandY(mousePosition.x, mousePosition.y)
+              )
+            );
+        const endY =
+          Y_CENTER +
+          radius *
+            Math.sin(
+              convertDegreesToRadians(
+                getAngleUsingXandY(mousePosition.x, mousePosition.y)
+              )
+            );
+
+        drawLine('blue', 3, X_CENTER, Y_CENTER, endX, endY);
+        drawLine('blue', 2, endX, endY, endX, CANVAS_HEIGHT / 2);
+        drawCircle('blue', 1, endX, endY, 3, 0, 2 * Math.PI, 'white');
+        drawCircle(
+          'blue',
+          1,
+          endX,
+          CANVAS_HEIGHT / 2,
+          3,
+          0,
+          2 * Math.PI,
+          'white'
+        );
+        drawText(
+          `B (${mousePosition.x},${mousePosition.y})`,
+          endX + 10,
+          endY + 5
+        );
+        drawText(
+          `C (${mousePosition.x},${CANVAS_HEIGHT / 2})`,
+          endX + 10,
+          CANVAS_HEIGHT / 2
+        );
+        const lengthHypotenuse = getLengthOfLine(
+          X_CENTER,
+          Y_CENTER,
+          endX,
+          endY
+        );
+        const lengthOpposite = getLengthOfLine(
+          endX,
+          endY,
+          endX,
+          CANVAS_HEIGHT / 2
+        );
+        drawText(`Length of oposite |BC|: ${lengthOpposite}`, 0, 150);
+        drawText(`Hypotenuse length |OB|: ${lengthHypotenuse}`, 0, 180);
+      }
+      function getLengthOfLine(x1, y1, x2, y2) {
+        return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2)).toFixed(
+          2
+        );
+      }
+      function redrawCanvas(event) {
+        ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        setMousePosition(event);
+        const degrees = getAngleUsingXandY(mousePosition.x, mousePosition.y);
+        const radians = convertDegreesToRadians(degrees);
+        //draw text informations
+        drawCanvas();
+        drawText(`Radians: ${radians}`, 0, 30);
+        drawText(`Degrees: ${degrees}`, 0, 60);
+        drawText(`X: ${mousePosition.x}`, 0, 90);
+        drawText(`Y: ${mousePosition.y}`, 0, 120);
+        drawTriangle();
+      }
+
+      function setupCanvas() {
+        canvas = document.getElementById('canvas');
+        setCanvasDimensions();
+
+        CANVAS_WIDTH = canvas.width;
+        CANVAS_HEIGHT = canvas.height;
+        X_CENTER = Math.floor(CANVAS_WIDTH / 2);
+        Y_CENTER = Math.floor(CANVAS_HEIGHT / 2);
+        radius = Math.floor((0.5 * Math.min(CANVAS_WIDTH, CANVAS_HEIGHT)) / 2);
+
+        if (canvas.getContext) {
+          /** @type { CanvasRenderingContext}*/
+          ctx = canvas.getContext('2d');
+          ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        } else {
+          canvas.textContent = 'Your browser do not support canvas';
+        }
+        drawCanvas();
+        canvas.addEventListener('mousemove', redrawCanvas);
+      }
+      
+      window.addEventListener('DOMContentLoaded', setupCanvas);
+      window.addEventListener('resize', function resizeCanvas() {
+        setupCanvas();
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas" width="700" height="500"></canvas>
+    <script>
+      let canvas;
+      let ctx;
+      let y = 0;
+      let timerID = null;
+      function setupCanvas() {
+        canvas = document.querySelector('#canvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        ctx = canvas.getContext('2d');
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      setupCanvas();
+      function drawLine(strokeColor, width, xStart, yStart, xEnd, yEnd) {
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        ctx.moveTo(xStart, yStart);
+        ctx.lineTo(xEnd, yEnd);
+        ctx.stroke();
+      }
+      function resizeCanvas() {
+        setupCanvas();
+        update();
+      }
+      let direction = 10;
+      const colors = ['red', 'green', 'blue', 'pink', 'orange'];
+      function update() {
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        if (y >= 0 && y <= canvas.height) {
+          if (y === 0) {
+            direction = 1;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          } else if (y >= canvas.height - 10) {
+            direction = -1;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          }
+          y += 10 * direction;
+        }
+        drawLine(randomColor, 1, 0, y, canvas.width, y);
+      }
+      timerID = setInterval(update, 100);
+      window.addEventListener('DOMContentLoaded', setupCanvas);
+      window.addEventListener('resize', resizeCanvas);
+    </script>
+  </body>
+</html>
